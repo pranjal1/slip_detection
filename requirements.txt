@@ -1,0 +1,8 @@
+loguru==0.5.1
+matplotlib==3.3.0
+opencv-python-headless==4.3.0.36
+pytube3==9.6.4
+scikit-video==1.1.11
+scipy==1.4.1
+numpy==1.18.5
+tqdm==4.48.2

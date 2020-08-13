@@ -1,0 +1,5 @@
+*.mp4
+*.jpg
+**vscode**
+**__pycache__**
+*.bin
