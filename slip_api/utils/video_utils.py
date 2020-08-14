@@ -3,11 +3,11 @@ import sys
 
 import cv2
 import skvideo
-from skvideo import datasets, io, measure
 import numpy as np
 from loguru import logger
 from pytube import YouTube
 import matplotlib.pyplot as plt
+from skvideo import datasets, io, measure
 
 
 def convert_vid_to_imgs(vid_path: str, save_path: str) -> bool:
@@ -47,7 +47,6 @@ def detect_scene_boundaries(
     elif not os.path.isfile(file_path):
         raise FileNotFoundError
     result_dct = dict()
-    print(file_path)
     videodata = io.vread(file_path)
     videometadata = io.ffprobe(file_path)
     frame_rate = videometadata["video"]["@avg_frame_rate"]
@@ -72,11 +71,28 @@ def detect_scene_boundaries(
         scene_lum = np.zeros((num_frames,))
         scene_lum[scene_lum_idx] = 1
         result_dct.update({"luminance_algorithm": scene_lum})
+    result_dct.update({"file": file_path})
     return result_dct
 
 
-def temporal_crop():
-    pass
+def temporal_crop(
+    video_path: str, crop_boundaries: np.array, save_folder_path: str
+) -> bool:
+    """
+    Crops the video in the video_path into smaller videos
+    crop_boundaries: numpy array of shape (video_frames,) 
+                     with the value at the crop frames position set to 1
+    """
+    v = io.vread(video_path)
+    crop_frames = np.where(crop_boundaries == 1)[0]
+    logger.info(f"Cropping video at frames {crop_frames}...")
+    if not os.path.isdir(save_folder_path):
+        os.makedirs(save_folder_path)
+    file_ext = os.path.splitext(video_path)[-1]
+    for i, (st, en) in enumerate(zip(crop_frames[:-1], crop_frames[1:])):
+        v_crop = v[st:en, :]
+        io.vwrite(os.path.join(save_folder_path, f"crop_{i}{file_ext}"), v_crop)
+    return True
 
 
 def download_video(
@@ -110,6 +126,11 @@ def download_video(
 
 
 if __name__ == "__main__":
-    # download_video("http://www.youtube.com/watch?v=yhb04aZYyXY", "data/slip1", True)
-    # convert_vid_to_imgs(sys.argv[1], sys.argv[2])
-    print(detect_scene_boundaries(debug=True))
+    sb = detect_scene_boundaries(debug=True, use_luminance=False)
+    print(
+        temporal_crop(
+            video_path=sb.get("file"),
+            crop_boundaries=sb.get("edge_algorithm"),
+            save_folder_path="tmp",
+        )
+    )
